@@ -1,5 +1,5 @@
 const width = window.innerWidth
-const height = 800 
+const height = 700 
 
 const svg = d3.select('.map-node').append('svg')
     .attr('width', width)
@@ -28,8 +28,6 @@ d3.json('world-map.json', (error, data) => {
     const angleScale = d3.scaleSequential()
         .domain([0, 6.28])
         .interpolator(d3.interpolateRainbow)
-
-    const centroidz = data.features.map(feature => { return path.centroid(feature) });
 
     const myName = svg.append('text').attr('class', 'my-name')
         .text('@JackMerlinBruce')
@@ -61,10 +59,26 @@ d3.json('world-map.json', (error, data) => {
             .innerRadius(50)
             .outerRadius(40)
         )
+        .style("pointer-events", "none")
         .attr('fill', (d, i) => { return legendColor(i) })
         .style("opacity", 0.7)
         .attr("transform", "translate(" + 150 + "," + 450 + ")")
 
+    function generateCentroids() {
+
+        const centroids = []
+        Array.from(document.getElementsByClassName('country')).forEach(country => {
+            let bbox = country.getBBox()
+            centroids.push({
+                'id': country.getAttribute('id'),
+                'x': (bbox.x) + (bbox.width / 2),
+                'y': (bbox.y) + (bbox.height / 2)
+            })
+        })
+        return centroids
+    }
+
+    const centroids = generateCentroids()
 
     let delay = 30
     let fadeOutMap
@@ -92,6 +106,7 @@ d3.json('world-map.json', (error, data) => {
             .attr('stroke-width', 5)
             .attr('stroke-linecap', 'round')
             .attr('stroke-opacity', 0.2)
+            .style("pointer-events", "none")
             .transition()
                 .duration(2000)
                 .delay((d, i) => { return i * delay })
@@ -143,7 +158,7 @@ d3.json('world-map.json', (error, data) => {
             .style('fill', 'rgb(34, 34, 34)')
             .style('opacity', 1)
             .style('transform', 'translateX(100)')
-            .style('cursor', 'none')
+            .style('cursor', 'crosshair')
 
         // Fadeout all other countries after n seconds
         let n = 2000
@@ -156,21 +171,6 @@ d3.json('world-map.json', (error, data) => {
                 .duration(n)
                 .style('opacity', 0)
         }, (centroids.length * delay) - n)
-
-        // svg.append('g').attr('class', 'centroids')
-        //     .selectAll('path')
-        //     .data(data.features)
-        //     .enter().append('path')
-        //     .attr('d', d => {
-        //         return path({
-        //             type: "LineString",
-        //             coordinates: [[0.1278, 50.5074], path.centroid(d)]
-        //         })
-        //     })
-        //     .style('fill', 'none')
-        //     .style('stroke', 'orange')
-        //     .style('stroke-width', 0.5)
-        //     .attr('stroke-opacity', 0.5)
 
     }
     function disconnectCentroids() {
@@ -188,47 +188,67 @@ d3.json('world-map.json', (error, data) => {
         clearTimeout(fadeOutMap)
     }
 
-    // let c = 0
-    // Array.from(document.getElementsByClassName('country')).forEach(country => {
-    //     setTimeout(() => {
-    //         console.log('connecting', country.id)
-    //         connectCentroids(country)
-    //     }, (centroids.length * delay) * (c))
-    //     setTimeout(() => {
-    //         console.log('diconnecting', country.id)
-    //         disconnectCentroids()
-    //     }, (centroids.length * delay) * (c + 2))
-    //     c += 2
-    // })
+    function startTimeline(params) {
+        let c = 0
+        Array.from(document.getElementsByClassName('country')).forEach(country => {
+            setTimeout(() => {
+                console.log('connecting', country.id)
+                connectCentroids(country)
+            }, (centroids.length * delay) * (c))
+            setTimeout(() => {
+                console.log('diconnecting', country.id)
+                disconnectCentroids()
+            }, (centroids.length * delay) * (c + 2))
+            c += 2
+        })
+    }
 
     function connectCentroidsMouse(mouseCoors) {
         let centroidX = mouseCoors[0]
         let centroidY = mouseCoors[1]
+        let angles = []
 
         // Draw line from selected country to centroid of every other
-        // svg.append('g').attr('class', 'centroids')
-        //     .selectAll('line')
-        //     .data(centroids)
-        //     .enter().append('line')
-        //     .attr('x1', centroidX)
-        //     .attr('y1', centroidY)
-        //     .attr('x2', d => { return d.x })
-        //     .attr('y2', d => { return d.y })
-        //     .attr('stroke', d => {
-        //         let angle = Math.atan2(d.y - centroidY, d.x - centroidX)
-        //         return angleScale(angle)
-        //     })
-        //     .attr('stroke-width', 5)
-        //     .attr('stroke-linecap', 'round')
-        //     .attr('stroke-opacity', 0.2)
+        svg.append('g').attr('class', 'centroids')
+            .selectAll('line')
+            .data(centroids)
+            .enter().append('line')
+            .attr('x1', centroidX)
+            .attr('y1', centroidY)
+            .attr('x2', d => { return d.x })
+            .attr('y2', d => { return d.y })
+            .attr('stroke', d => {
+                let angle = Math.atan2(centroidY - d.y, centroidX - d.x)
+                angles.push(angle)
+                return angleScale(angle)
+            })
+            .attr('stroke-width', 5)
+            .attr('stroke-linecap', 'round')
+            .attr('stroke-opacity', 0.2)
         legend
             .attr("transform", "translate(" + centroidX + "," + centroidY + ")")
 
     }
-    // svg.on('mousemove', function() {
-    //     disconnectCentroids()
-    //     connectCentroidsMouse(d3.mouse(this))
-    // })
+
+
+    const checkBtn = document.querySelector('input')
+    const checkBtnContainter = document.querySelector('.input-container')
+    checkBtn.addEventListener('change', () => {
+        if (checkBtn.checked) {
+            svg.on('mousemove', function () {
+                disconnectCentroids()
+                connectCentroidsMouse(d3.mouse(this))
+            })
+        } else {
+            svg.on('mousemove', null)
+        }
+    })
+
+
+
+
+
+
 
 
 
