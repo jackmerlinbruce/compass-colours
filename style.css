@@ -8,7 +8,7 @@ body {
     font-family: 'Rubik', sans-serif;
     font-size: 200%;
     /* text-anchor: middle; */
-    fill: floralwhite;
+    fill: rgba(255, 250, 240, 0.452);
     opacity: 0.7;
 }
 .desc {

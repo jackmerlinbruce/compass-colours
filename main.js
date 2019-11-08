@@ -1,4 +1,5 @@
-const width = 1200, height = 800 
+const width = window.innerWidth
+const height = 800 
 
 const svg = d3.select('.map-node').append('svg')
     .attr('width', width)
@@ -44,7 +45,7 @@ d3.json('world-map.json', (error, data) => {
         .attr('class', 'country')
         .attr('id', d => { return d.id })
         .attr('name', d => { return d.properties.name })
-        .style('fill', 'floralwhite')
+        .style('fill', 'rgba(255, 250, 240, 0.452)')
         .style('stroke', 'floralwhite')
         .style('stroke-width', 0.5)
         .style('opacity', 1)
@@ -61,50 +62,15 @@ d3.json('world-map.json', (error, data) => {
             .outerRadius(40)
         )
         .attr('fill', (d, i) => { return legendColor(i) })
-        // .attr("stroke", (d, i) => { return legendColor(i) })
         .style("opacity", 0.7)
         .attr("transform", "translate(" + 150 + "," + 450 + ")")
 
-    // const cities = svg.append('g').attr('class', 'cities')
-    //     .append('path')
-    //     .attr('d', path({
-    //         "type": "Point",
-    //         "coordinates": [
-    //             0.1278,
-    //             51.5074
-    //         ]
-    //     }))
-    //     .style('fill', 'red')
-    //     .style('stroke', 'green')
-    //     .style('stroke-width', 5)
-
-    function generateCentroids() {
-        // const centroids = {}
-        // Array.from(document.getElementsByClassName('country')).forEach(country => {
-        //     let bbox = country.getBBox()
-        //     centroids[country.getAttribute('id')] = {
-        //         'x': (bbox.x) + (bbox.width / 2),
-        //         'y': (bbox.y) + (bbox.height / 2)
-        //     }
-        // })
-
-        const centroids = []
-        Array.from(document.getElementsByClassName('country')).forEach(country => {
-            let bbox = country.getBBox()
-            centroids.push({
-                'id': country.getAttribute('id'),
-                'x': (bbox.x) + (bbox.width / 2),
-                'y': (bbox.y) + (bbox.height / 2)
-            })
-        })
-        return centroids
-    }    
-    const centroids = generateCentroids()
 
     let delay = 30
     let fadeOutMap
     function connectCentroids(thisCountry) {
-        let bbox = thisCountry.getBBox()
+
+        let bbox = this.getBBox()
         let centroidX = (bbox.x) + (bbox.width / 2)
         let centroidY = (bbox.y) + (bbox.height / 2)
         let angles = []
@@ -134,7 +100,7 @@ d3.json('world-map.json', (error, data) => {
 
         // Add country name as a tooltip
         svg.append('text').attr('class', 'country-name')
-            .text(thisCountry.getAttribute('name'))
+            .text(this.getAttribute('name'))
             .attr('x', centroidX)
             .attr('y', 90)
             .attr('fill', angleScale(d3.mean(angles)))
@@ -173,7 +139,7 @@ d3.json('world-map.json', (error, data) => {
             .style('opacity', 0.05)
         
         // Highlight current country
-        d3.select(thisCountry)
+        d3.select(this)
             .style('fill', 'rgb(34, 34, 34)')
             .style('opacity', 1)
             .style('transform', 'translateX(100)')
@@ -215,25 +181,25 @@ d3.json('world-map.json', (error, data) => {
         d3.select('.desc')
             .remove()
         d3.selectAll('.country')
-            .style('fill', 'floralwhite')
+            .style('fill', 'rgba(255, 250, 240, 0.452)')
             .style('opacity', 1)
         legend
             .style('opacity', 1)
         clearTimeout(fadeOutMap)
     }
 
-    let c = 0
-    Array.from(document.getElementsByClassName('country')).forEach(country => {
-        setTimeout(() => {
-            console.log('connecting', country.id)
-            connectCentroids(country)
-        }, (centroids.length * delay) * (c))
-        setTimeout(() => {
-            console.log('diconnecting', country.id)
-            disconnectCentroids()
-        }, (centroids.length * delay) * (c + 2))
-        c += 2
-    })
+    // let c = 0
+    // Array.from(document.getElementsByClassName('country')).forEach(country => {
+    //     setTimeout(() => {
+    //         console.log('connecting', country.id)
+    //         connectCentroids(country)
+    //     }, (centroids.length * delay) * (c))
+    //     setTimeout(() => {
+    //         console.log('diconnecting', country.id)
+    //         disconnectCentroids()
+    //     }, (centroids.length * delay) * (c + 2))
+    //     c += 2
+    // })
 
     function connectCentroidsMouse(mouseCoors) {
         let centroidX = mouseCoors[0]
